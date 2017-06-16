@@ -1,32 +1,37 @@
 ## R script to simulate parent-of-origin effects for analysis with Haseman-Elston regression
 source("./simulate_funcs_HEDOSE_0.6.R")
 
+## Called from the commmand line with "Rscript"
 args <- as.numeric(commandArgs(TRUE))
 
-####
+#### Test values of the arguments
 ## args <- c(91433, 0.1, 0.01, 0.05, 0.00, 0.00, 0.25, 10, 1800, 2601, 5); set.seed(seed = args[[1]])
 
 heSim <- function(args){
+    ## Wrapper function to generate simulated data sets by calling several other funcitons OB
     runid <- (args[[1]] + floor(1e9*runif(1)) %% as.numeric(format(Sys.time(),"%s")))
     set.seed(seed = runid) 
-    hsqA <- args[[2]]
-    hsqD <- args[[3]]
-    hsqP <- args[[4]]
-    delta_Maf <- args[[5]]
-    rel_Cor <- args[[6]]
-    avg_LD <- args[[7]]
-    npairvar <- args[[8]]
-    nobs <- args[[9]]
-    nsnps <- args[[10]]
+    hsqA <- args[[2]] ## proportion of variance attributable to additive effects
+    hsqD <- args[[3]] ## proportion of variance attributable to dominance effects
+    hsqP <- args[[4]] ## proportion of variance attributable to parent-of-origin effects
+
+    delta_Maf <- args[[5]] ## difference in minor allele frequencies between mothers and fathers
+    rel_Cor <- args[[6]] ## average correlation between parents' genotypes
+    avg_LD <- args[[7]] ## (average LD, for pairs of SNPs in LD )
+    npairvar <- args[[8]] ## number of SNP pairs for which to simulate LD > 0
+    nobs <- args[[9]] ## Number of simulated probands
+    nsnps <- args[[10]] ## Number of simulated SNPsOB
     
 
-    simulate_struct <- sim_chble(N = nobs, p = nsnps, hsqA = hsqA, hsqD = hsqD, hsqP = hsqP, delta_Maf = delta_Maf, new_Cor = rel_Cor, avg_LD = avg_LD, pair_Count = npairvar)
 
+    simulate_struct <- sim_chble(N = nobs, p = nsnps, hsqA = hsqA, hsqD = hsqD, hsqP = hsqP, delta_Maf = delta_Maf, new_Cor = rel_Cor, avg_LD = avg_LD, pair_Count = npairvar) ## object holding sim data
+
+    ## Generate proband's genotype from simulated transmissionsOB
     Aeps <- (simulate_struct$mat_ped_snps + simulate_struct$pat_ped_snps)
     Deps <- Aeps * matrix(1, nrow = nrow(Aeps)) %*% matrix(colMeans(Aeps), nrow = 1) - 2*(Aeps > 1)
     Xeps <- (simulate_struct$mat_ped_snps - simulate_struct$pat_ped_snps)
 
-
+### Standardize the simulated genotype codingsOB
     aSD <-  function(pv, qv){
         sqrt(2 * pv * qv)
     }
@@ -72,7 +77,7 @@ heSim <- function(args){
     pheno <- Aeps %*% matrix(simulate_struct$betaA, ncol = 1) +  Deps %*% matrix(simulate_struct$betaD, ncol = 1)  + Xeps %*% matrix(simulate_struct$betaP, ncol = 1) + rnorm(nobs, mean = 0, sd = sqrt( 1 - (hsqA + hsqP + hsqD)))
     write.table(cbind(paste0("id", 1:nobs),  paste0("id", 1:nobs),  pheno), file = paste0("simd.",runid,".pheno"), row.names = FALSE, col.names = FALSE, quote = FALSE)
 
-### R computations
+### R computations: making GRM
 
     mGRM <- (1 / nsnps) * tcrossprod(scale(simulate_struct$mat_ped_snps))
     pGRM <- (1 / nsnps) * tcrossprod(scale(simulate_struct$pat_ped_snps))
@@ -81,19 +86,25 @@ heSim <- function(args){
     
                                         # XGRMalt <- (1 / nsnps) * tcrossprod(scale(Xeps)*(nrow(Xeps) - 1) /nrow(Xeps)) 
                                         # plot(XGRM[lower.tri(XGRM)], XGRMalt[lower.tri(XGRMalt)])
-    ecoef <- sum(simulate_struct$betaP^2)
+    ecoef <- sum(simulate_struct$betaP^2) ## expected beta valuesOB
 
+    ## Data frame for Haseman-Elston regression
     hedata <- data.frame(pheno = phGRM[lower.tri(phGRM)], mgrm = mGRM[lower.tri(mGRM)], pgrm = pGRM[lower.tri(pGRM)], add = aGRM[lower.tri(aGRM)], dom = dGRM[lower.tri(dGRM)], xeps = xGRM[lower.tri(xGRM)])
 
     ## signif((crossprod(data.matrix(hedata)) - diag(nrow(hedata), 6))/nrow(hedata) * 100, 3) 
 
+    ### Three Haseman-Elston Models: 
+    #### Using parentally transmitted GRMS
     HE1.2 <- lm(pheno ~ mgrm + pgrm, data = hedata)
+    #### All three (proband) coded genotype GRMs
     HE2.3 <- lm(pheno ~ add + dom + xeps, data = hedata)
+    #### Additive and dominance coded GRMs only
     HE2.4 <- lm(pheno ~ add + dom, data = hedata)
 
     with(simulate_struct, make_mldose_and_ped(mat_ped_snps = mat_ped_snps, pat_ped_snps = pat_ped_snps, runid = runid, nobs = nobs, nsnps = nsnps ))
     make_adp_grms(runid)
 
+    ## Store results from the simulation in the file system
     system(paste0("touch simgrmlist.", runid, ".txt"))
     system(paste0("echo simA.", runid, ">> simgrmlist.", runid, ".txt"))
     system(paste0("echo simD.", runid, ".d >> simgrmlist.", runid, ".txt"))
@@ -122,6 +133,7 @@ heSim <- function(args){
 
 }
 
+## Perform n replications of the simulation under conditions given in args vector at command line
 outcome <- t(replicate(heSim(args), n = args[[11]]))
 
 write.table(outcome, file = paste0("res", paste0(args, collapse = "V"), "X.txt"), row.names = FALSE, quote = FALSE, col.names = TRUE, sep = "\t")

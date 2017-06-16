@@ -30,7 +30,7 @@ while (<SAMPLE>) {
   if($qlet eq "M") {
     push @famids, $famid;                       #Just based on mothers because if no mother then pattern of transmission cannot be determined
     $mother_id{$famid} = $temp[0];
-    $motherpos{$famid}= $count;
+    $motherpos{$famid}= $count; # position within the file
   } else {
     $qlet{$famid} = $qlet;
     $child_id{$famid} = $temp[0];
@@ -151,7 +151,7 @@ foreach $famid (@selected_fam) {
     ($hap2mum) = unpack($template1,$hap2_mother{$famid});
     ($hap1child) = unpack($template1,$hap1_child{$famid});
     ($hap2child) = unpack($template1,$hap2_child{$famid});
-
+    # large set of _if_ statements to resolve haplotype
     if($hap1mum == 0 && $hap2mum == 0) {
 
       if($hap1child == 0 && $hap2child == 0) {
