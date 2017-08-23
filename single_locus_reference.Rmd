@@ -1,0 +1,71 @@
+---
+    author: "C Laurin"
+    output: html_document
+---
+
+Supposing we have a diploid model organism in the sense of Chapter 1 of Edwards, _Foundations of Mathematical Genetics_ (non-overlapping generations, random union of gametes, no developmental effects and so on), we can use the script [https://github.com/amatrhr/g-remladp/blob/master/simulate_funcs_HEDOSE_0.6.R](https://github.com/amatrhr/g-remladp/blob/master/simulate_funcs_HEDOSE_0.6.R) to simulate individuals' phased genotypes by first simulating their parents' gametes. 
+
+This page describes the process for one locus. 
+
+
+# Simulating one locus: ideal *G-REMLadp* model
+
+## Process
+
+### Gametes 
+- The locus has a minor allele with frequency $p$, hence an individual gamete is modeled as a draw from the Bernoulli($p$) distribution; note $q = 1-p$ 
+- In simulations, draw $n$ maternal gametes as $n$ draws from the Bernoulli($p$) and store them in the vector $\mathbf{g}_{mo}$, coding minor alleles as 1s and major alleles as 0s
+- Permute the indices of $\mathbf{g}_{mo}$ to generate a vector of paternal gametes, $\mathbf{g}_{fa}$
+    + This way, the proportion of minor alleles is exactly equal in both maternal and paternal gamete vectors
+    + Suppose the sample is large enough that the sample proportion of minor alleles in each vector of gametes is expected to differ from the true minor allele frequency by an arbitrary negligable amount so that $\mathbf{g}_{mo}^\prime\mathbf{g}_{mo} = \mathbf{g}_{fa}^\prime\mathbf{g}_{fa} \doteq np$ and our abuses of notation by interchanging proportions and probabilities are venal sins
+
+### Phased genotype 
+- This is a four-category multinomial variable. For individual $i$, in $1\dots n$
+    1. Homozygous major: $g_{mo,\, i} = g_{fa,\,i} = 0$ with probability $q^2$
+    2. Maternal-major heterozygote: $g_{mo,\,i} = 0;\;g_{fa,\,i} = 1$ with probability $pq$
+    3. Paternal-major heterozygote: $g_{mo,\,i} = 1;\;g_{fa,\, i} = 0$ with probability $pq$
+    4. Homozygous minor: $g_{mo,\,i} = g_{fa,\, i} = 1$ with probability $p^2$
+- Represent this using three codings: additive, parent-of-origin, dominance    
+
+### Additive coding: $\mathbf{x}_{A}$
+- This is the count of minor alleles for each individual: $\mathbf{x}_{A} = \mathbf{g}_{fa} + \mathbf{g}_{mo}$ 
+- An $n$-vector consisting of (roughly) $nq^2$ 0's, $2npq$ 1's and $np^2$ 2's 
+
+### Parent-of-origin coding: $\mathbf{x}_\gamma$
+- 0 for homozygotes, -1 for maternal-major heterozygotes, and +1 for paternal-major heterozygotes
+- $\mathbf{x}_{\gamma} = \mathbf{g}_{fa} - \mathbf{g}_{mo}$
+- This is an $n$-vector of $n\left(p^2 + q^2\right)$ 0's, $npq$ -1's and $npq$ 1's
+- It's orthogonal to the additive coding in linear $n$-space of observations: $\mathbf{x}^\prime_\gamma\mathbf{x}_{A} = \mathbf{g}^\prime_{fa}\mathbf{g}_{fa} -  \mathbf{g}^\prime_{mo}\mathbf{g}_{mo} = np - np = 0$
+
+### Dominance coding $\mathbf{x}_{\Delta}$
+- From [Zhu et al 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4375616/)    
+- Code homozygous-major individuals as 0; heterozygotes as $2p$, homozygous-minor individuals as $4p -2$
+- $\mathbf{x}_\Delta = 2p\mathbf{x}_{A} - 2I\left(\mathbf{x}_A > 1\right)$
+    - Where 
+
+## `simulate_funcs_HEDOSE.R::simulate_oneSNP()` and `lrt_sim_HEDOSE.R::simulate_struct()`
+These are helper functions within larger functions and aren't run on their own in practice, but it is helpful to 
+### Generating genotype codings
+### generating phenotypes
+
+## Example
+
+# Single-locus GRMs
+## Orthogonality
+
+# HE Regression
+
+# Problem: mothers' and fathers' MAF unequal
+1. Rationale and implementation
+2. Example 
+
+# Problem: Correlated gametes
+1. Rationale and implementation
+2. Example 
+
+# Problem: Heterozygotes incorrectly phased
+1. Rationale and implementation
+2. Example 
+
+# Next: Multiple loci
+[[Multiple locus reference]]
