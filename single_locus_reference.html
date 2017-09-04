@@ -143,10 +143,10 @@ $(document).ready(function () {
 <ul>
 <li>This is a four-category multinomial variable. For individual <span class="math inline">\(i\)</span>, in <span class="math inline">\(1\dots n\)</span>
 <ol style="list-style-type: decimal">
-<li>Homozygous major: <span class="math inline">\(g_{mo,\, i} = g_{fa,\,i} = 0\)</span> with probability <span class="math inline">\(q^2\)</span></li>
-<li>Maternal-major heterozygote: <span class="math inline">\(g_{mo,\,i} = 0;\;g_{fa,\,i} = 1\)</span> with probability <span class="math inline">\(pq\)</span></li>
-<li>Paternal-major heterozygote: <span class="math inline">\(g_{mo,\,i} = 1;\;g_{fa,\, i} = 0\)</span> with probability <span class="math inline">\(pq\)</span></li>
-<li>Homozygous minor: <span class="math inline">\(g_{mo,\,i} = g_{fa,\, i} = 1\)</span> with probability <span class="math inline">\(p^2\)</span></li>
+<li><span class="math inline">\(aa\)</span>, or Homozygous major: <span class="math inline">\(g_{mo,\, i} = g_{fa,\,i} = 0\)</span> with probability <span class="math inline">\(q^2\)</span></li>
+<li><span class="math inline">\(a_{mo}A_{fa}\)</span>, or Maternal-major heterozygote: <span class="math inline">\(g_{mo,\,i} = 0;\;g_{fa,\,i} = 1\)</span> with probability <span class="math inline">\(pq\)</span></li>
+<li><span class="math inline">\(A_{mo}a_{fa}\)</span>, or Paternal-major heterozygote: <span class="math inline">\(g_{mo,\,i} = 1;\;g_{fa,\, i} = 0\)</span> with probability <span class="math inline">\(pq\)</span></li>
+<li><span class="math inline">\(AA\)</span>, or Homozygous minor: <span class="math inline">\(g_{mo,\,i} = g_{fa,\, i} = 1\)</span> with probability <span class="math inline">\(p^2\)</span></li>
 </ol></li>
 <li>Represent this using three codings: additive, parent-of-origin, dominance</li>
 </ul>
@@ -173,38 +173,303 @@ $(document).ready(function () {
 <li>From <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4375616/">Zhu et al 2015</a><br />
 </li>
 <li>Code homozygous-major individuals as 0; heterozygotes as <span class="math inline">\(2p\)</span>, homozygous-minor individuals as <span class="math inline">\(4p -2\)</span></li>
-<li><span class="math inline">\(\mathbf{x}_\Delta = 2p\mathbf{x}_{A} - 2I\left(\mathbf{x}_A &gt; 1\right)\)</span>
+<li><span class="math inline">\(\mathbf{x}_\Delta = 2p\mathbf{x}_{A} - 2\mathcal{I}\left(\mathbf{x}_A &gt; 1\right)\)</span>
 <ul>
-<li>Where</li>
+<li>Where <span class="math inline">\(\mathcal{I}\left(.\right)\)</span> is the indicator function.</li>
+</ul></li>
+<li>The additive and dominance codings have 0 covariance but are not orthogonal unless centred; their cross product is equal to the product of the means of <span class="math inline">\(\mathbf{x}_A\)</span> and <span class="math inline">\(\mathbf{x}_\Delta\)</span>
+<ul>
+<li><span class="math inline">\(\mathbf{x}_\Delta^\prime\mathbf{x}_{A} = 2p\left(2pq + 4p^2\right) - 2\left(2p^2\right) = 2p \times 2p^2\)</span></li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="simulate_funcs_hedose.rsimulate_onesnp-and-lrt_sim_hedose.rsimulate_struct" class="section level2">
-<h2><code>simulate_funcs_HEDOSE.R::simulate_oneSNP()</code> and <code>lrt_sim_HEDOSE.R::simulate_struct()</code></h2>
-<p>These are helper functions within larger functions and aren’t run on their own in practice, but it is helpful to ### Generating genotype codings ### generating phenotypes</p>
+<div id="simulate_funcs_hedose.r-and-lrt_sim_hedose.rhesim" class="section level2">
+<h2><code>simulate_funcs_HEDOSE.R</code> and <code>lrt_sim_HEDOSE.R::heSim()</code></h2>
+<p>These are helper functions within larger functions and aren’t run on their own in practice, but it is helpful to look into them to see how data are generated.</p>
+<div id="generating-genotype-codings" class="section level3">
+<h3>Generating genotype codings</h3>
+<div id="simulating-gametes" class="section level4">
+<h4>Simulating gametes</h4>
+<ul>
+<li>Maternal gametes are generated in<code>simulate_funcs_HEDOSE.R::sim_chble()</code> as <span class="math inline">\(p\times n\)</span> independent Bernoulli variables with the <span class="math inline">\(p\)</span> effect allele frequencies (minor allele frequencies) drawn from a uniform distribution on <span class="math inline">\([0.01, 0.5]\)</span></li>
+</ul>
+<pre class="r"><code>true_EAFs &lt;- runif(p, min = 1e-2, max = 0.5)
+  if (N &lt; 250) { 
+    true_EAFs &lt;- rep(0.5, p)
+  }
+  mat_ped_snps &lt;- sapply(true_EAFs, rbinom, n = N, size = 1) ## poorly named matrix of maternal gametes
+  pat_ped_snps &lt;- apply(mat_ped_snps,2, simulate_oneSNP, delmaf = delta_Maf) ## poorly named matrix of paternal gametes</code></pre>
+<ul>
+<li>Paternal gametes are generated using <code>simulate_funcs_HEDOSE.R::simulate_oneSNP()</code>, which permutes the maternal gametes; the delmaf parameter allows for the maternal MAF to differ from the paternal MAF, this is exploed further <a href="#uneqMAF">below</a>
+<ul>
+<li>It is also possible to generate correlations between the gametes, see <a href="#corrGAM">here</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="simulating-phased-genotype-codings" class="section level4">
+<h4>Simulating phased genotype codings</h4>
+<ul>
+<li>Using the formulas given above, the phased genotype codings for each individual are generated from their parents’ gametes; this is in <code>lrt_sim_HEDOSE.R::heSim()</code></li>
+</ul>
+<pre class="r"><code>    Aeps &lt;- (simulate_struct$mat_ped_snps + simulate_struct$pat_ped_snps)
+    Deps &lt;- Aeps * matrix(1, nrow = nrow(Aeps)) %*% matrix(colMeans(Aeps), nrow = 1) - 2*(Aeps &gt; 1)
+    Xeps &lt;- (simulate_struct$mat_ped_snps - simulate_struct$pat_ped_snps)</code></pre>
+</div>
+</div>
+<div id="generating-phenotypes" class="section level3">
+<h3>Generating phenotypes</h3>
+<ul>
+<li>The variance components for each coded genotype at each locus are generated in <code>simulate_funcs_HEDOSE.R::sim_chble()</code></li>
+</ul>
+<pre class="r"><code>  betaA &lt;- rnorm(n = p, mean = 0, sd = sqrt(hsqA / p))
+  betaD &lt;- rnorm(n = p, mean = 0, sd = sqrt(hsqD / p))
+  betaP &lt;- rnorm(n = p, mean = 0, sd = sqrt(hsqP / p))
+  
+  pheno &lt;- Aeps %*% matrix(simulate_struct$betaA, ncol = 1) +  Deps %*% matrix(simulate_struct$betaD, ncol = 1)  + Xeps %*% matrix(simulate_struct$betaP, ncol = 1) + rnorm(nobs, mean = 0, sd = sqrt( 1 - (hsqA + hsqP + hsqD)))</code></pre>
+</div>
 </div>
 <div id="example" class="section level2">
 <h2>Example</h2>
+<div id="code-for-example" class="section level3">
+<h3>Code for example</h3>
+<pre class="r"><code>## Preamble handled by functions IRL
+source(&quot;simulate_funcs_HEDOSE_0.6.R&quot;)
+
+# set.seed(153719)
+N = 999
+p = 1
+delta_Maf = 0
+
+### Variance components
+hsqA = 0.15
+hsqD = 0.0375
+hsqP = 0.075
+
+## Generate gametes
+true_EAFs &lt;- 0.5
+mat_ped_snps &lt;- sapply(true_EAFs, rbinom, n = N, size = 1)  ## poorly named matrix of maternal gametes
+pat_ped_snps &lt;- apply(mat_ped_snps, 2, simulate_oneSNP, delmaf = delta_Maf)  ## poorly named matrix of paternal gametes
+
+## Generate phased genotypes and standardize them
+Aeps &lt;- (mat_ped_snps + pat_ped_snps)
+Deps &lt;- Aeps * matrix(1, nrow = nrow(Aeps)) %*% matrix(colMeans(Aeps), nrow = 1) - 
+    2 * (Aeps &gt; 1)
+Xeps &lt;- (mat_ped_snps - pat_ped_snps)
+
+### scale() results in annoying attributes; current workaround is to sweep(),
+### use known formulas for moments
+
+aSD &lt;- function(pv, qv) {
+    sqrt(2 * pv * qv)
+}
+
+Dmean &lt;- function(pv, qv) {
+    2 * pv^2
+}
+
+DSD &lt;- function(pv, qv) {
+    sqrt(4 * pv^2 * qv^2)
+}
+
+pmaf &lt;- 0.5 * colMeans(Aeps)
+q &lt;- 1 - pmaf
+
+### Standardize
+Aeps &lt;- sweep(sweep(Aeps, 2, 2 * pmaf), 2, aSD(pmaf, q), FUN = &quot;/&quot;)
+Deps &lt;- sweep(sweep(Deps, 2, Dmean(pmaf, q)), 2, DSD(pmaf, q), FUN = &quot;/&quot;)
+Xeps &lt;- sweep(Xeps, 2, aSD(pmaf, q), FUN = &quot;/&quot;)
+
+## Generate phenotypes
+betaA &lt;- rnorm(n = p, mean = 0, sd = sqrt(hsqA/p))
+betaD &lt;- rnorm(n = p, mean = 0, sd = sqrt(hsqD/p))
+betaP &lt;- rnorm(n = p, mean = 0, sd = sqrt(hsqP/p))
+
+pheno &lt;- Aeps %*% matrix(betaA, ncol = 1) + Deps %*% matrix(betaD, ncol = 1) + 
+    Xeps %*% matrix(betaP, ncol = 1) + rnorm(N, mean = 0, sd = sqrt(1 - (hsqA + 
+    hsqP + hsqD)))</code></pre>
+</div>
+<div id="the-simulated-sample" class="section level3">
+<h3>The simulated sample</h3>
+<ul>
+<li>The minor allele frequency was:</li>
+</ul>
+<pre><code>## [1] 0.4884885</code></pre>
+<ul>
+<li>Covariance matrix of the standardized, coded phased genotypes:</li>
+</ul>
+<pre><code>##          Aeps    Deps     Xeps
+## Aeps  1.0e+00 -0.0012 -2.0e-23
+## Deps -1.2e-03  1.0000  0.0e+00
+## Xeps -2.0e-23  0.0000  9.8e-01</code></pre>
+<ul>
+<li>Histogram of phenotypes: <img src="data:image/png;base64,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" width="672" /></li>
+<li>The true regression coefficients were:</li>
+</ul>
+<pre><code>## [1]  0.159 -0.189 -0.144</code></pre>
+<ul>
+<li>Linear models:</li>
+</ul>
+<pre><code>## 
+## Call:
+## lm(formula = pheno ~ Aeps + Deps + Xeps)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.40874 -0.55715 -0.01649  0.55531  2.46158 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  0.01708    0.02640   0.647    0.518    
+## Aeps         0.14107    0.02615   5.394 8.61e-08 ***
+## Deps        -0.20636    0.02640  -7.817 1.37e-14 ***
+## Xeps        -0.12768    0.02664  -4.793 1.90e-06 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.8342 on 995 degrees of freedom
+## Multiple R-squared:  0.1022, Adjusted R-squared:  0.0995 
+## F-statistic: 37.76 on 3 and 995 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
 </div>
 </div>
 <div id="single-locus-grms" class="section level1">
 <h1>Single-locus GRMs</h1>
-<div id="orthogonality" class="section level2">
-<h2>Orthogonality</h2>
+<ul>
+<li><span class="math inline">\(A = p^{-1}Z_A Z_A'\)</span></li>
+<li><span class="math inline">\(\Delta = p^{-1}Z_\Delta Z_\Delta'\)</span></li>
+<li><p><span class="math inline">\(\Gamma = p^{-1}Z_\gamma Z_\gamma'\)</span></p></li>
+<li>Calculate this using the <code>tcrossprod</code> function on the standardized vectors holding the phased coded genotypes, in script <code>lrt_sim_HEDOSE.R::heSim()</code></li>
+<li></li>
+</ul>
+<pre class="r"><code>    aGRM &lt;- (1 / p) * tcrossprod(Aeps) ## 'nsnps' is used in place of 'p' in the actual code
+    dGRM &lt;- (1 / p) * tcrossprod(Deps)
+    xGRM &lt;- (1 / p) * tcrossprod(Xeps)</code></pre>
+<ul>
+<li>Orthogonality follows from the orthogonality of the vectors used to make the GRMs</li>
+</ul>
+<pre class="r"><code>agtable &lt;- table(as.vector(aGRM))
+dimnames(agtable)[[1]] &lt;- as.character(signif(as.numeric(dimnames(agtable)[[1]]), 3))
+print(agtable)</code></pre>
+<pre><code>## 
+##      -2  -0.045 0.00106  0.0471    1.91    2.09 
+##  129276  260680  240100  238140   70756   59049</code></pre>
+<pre class="r"><code>dgtable &lt;- table(as.vector(dGRM))
+dimnames(dgtable)[[1]] &lt;- as.character(signif(as.numeric(dimnames(dgtable)[[1]]), 3))
+print(dgtable)</code></pre>
+<pre><code>## 
+##  -1.05 -0.955  0.912      1    1.1 
+## 238140 260680  70756 369376  59049</code></pre>
+<pre class="r"><code>xgtable &lt;- table(as.vector(xGRM))
+dimnames(xgtable)[[1]] &lt;- as.character(signif(as.numeric(dimnames(xgtable)[[1]]), 3))
+print(xgtable)</code></pre>
+<pre><code>## 
+##     -2      0      2 
+## 120050 757901 120050</code></pre>
+<pre class="r"><code>summary(as.vector(aGRM %*% dGRM))</code></pre>
+<pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## -1.74199 -1.58871  0.03744  0.00000  1.66359  1.82409</code></pre>
+<pre class="r"><code>summary(diag(aGRM %*% dGRM))</code></pre>
+<pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## -1.58871 -1.58871 -0.03920  0.00145 -0.03920  1.82409</code></pre>
+<pre class="r"><code>summary(as.vector(aGRM %*% xGRM))</code></pre>
+<pre><code>##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+## -1.11e-16  0.00e+00  0.00e+00  0.00e+00  0.00e+00  1.11e-16</code></pre>
+<pre class="r"><code>summary(diag(aGRM %*% xGRM))</code></pre>
+<pre><code>##       Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
+## -8.674e-19  0.000e+00  0.000e+00  0.000e+00  0.000e+00  8.674e-19</code></pre>
+<pre class="r"><code>summary(as.vector(xGRM %*% dGRM))</code></pre>
+<pre><code>##       Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
+## -8.882e-16  0.000e+00  0.000e+00  0.000e+00  0.000e+00  8.882e-16</code></pre>
+<pre class="r"><code>summary(diag(xGRM %*% dGRM))</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0       0       0       0       0       0</code></pre>
+<ul>
+<li>Each GRM entry is generated by pairing two phased genotypes from the set <span class="math inline">\(aa,\,a_{mo}A_{fa}, A_{mo}a_{fa}, AA\)</span>
+<ul>
+<li>Expected frequencies can be calculated from the matrix <span class="math inline">\(n \left(\begin{matrix}q^2 \\ pq \\ pq \\ p^2 \end{matrix}\right)\left(\begin{matrix}q^2 \\ pq \\ pq \\ p^2 \end{matrix}\right)'\)</span></li>
+<li>Values in each cell can be calculated similarly, applying the outer product to
+<ul>
+<li><span class="math inline">\(\left(2pq\right)^{-1/2}\left(-2p,\,1-2p,\,2-2p\right)'\)</span> for <span class="math inline">\(A\)</span></li>
+<li><span class="math inline">\(\left(4p^2q^2\right)^{-1/2}\left(0-2p^2,\,2p - 2p^2,\,4p - 2 - 2p^2\right)'\)</span> for <span class="math inline">\(\Delta\)</span></li>
+<li><span class="math inline">\(\left(2pq\right)^{-1/2}\left(0,\,-1,\,1,\,0\right)'\)</span> for <span class="math inline">\(\Gamma\)</span></li>
+</ul></li>
+</ul></li>
+<li>There will be 6 distinct <span class="math inline">\(A\)</span> values, 5 distinct <span class="math inline">\(\Delta\)</span> values, and 3 distinct <span class="math inline">\(\Gamma\)</span> values
+<ul>
+<li>In the multivariate case, the number of possible values of GRM entries increases exponentiallly</li>
+</ul></li>
+</ul>
+</div>
+<div id="cross-product-matrix-of-phenotypes" class="section level1">
+<h1>Cross-product matrix of phenotypes</h1>
+<ul>
+<li>Again in <code>lrt_sim::heSim()</code></li>
+<li>This is <span class="math inline">\(Y = yy'\)</span> where the <span class="math inline">\(y\)</span>’s are the scaled <span class="math inline">\(n\times 1\)</span> column vectors of phenotypes</li>
+<li>The trace of <span class="math inline">\(Y\)</span> is <span class="math inline">\(n\)</span> times the sample variance of the phenotype</li>
+</ul>
+<pre class="r"><code>phGRM &lt;- tcrossprod(scale(pheno, scale = FALSE))    
+summary(as.vector(phGRM))</code></pre>
+<pre><code>##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+## -6.788136 -0.293976  0.000037  0.000000  0.293533  7.179071</code></pre>
+<pre class="r"><code>summary(diag(phGRM))</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## 0.00000 0.08265 0.34936 0.77203 0.99583 7.17907</code></pre>
+<div id="vech" class="section level2">
+<h2>vech()</h2>
+<ul>
+<li>This function is a map between a symmetric matrix and a column vector containing the diagonal and below-diagonal elements</li>
+<li>Regression of, say <span class="math inline">\(\mathrm{vech}\left(Y\right)\)</span> on <span class="math inline">\(\mathrm{vech}\left(\Gamma\right)\)</span> is not exactly the same as the Haseman-Elston regression because HE regression does not include the diagonal elements of <span class="math inline">\(Y\)</span> and <span class="math inline">\(\Gamma\)</span>.
+<ul>
+<li>These data <em>are</em> used in the maximum-likelihood estimate</li>
+</ul></li>
+<li>The number of diagonal elements does not increase as fast in <span class="math inline">\(n\)</span> as does the total number of elements.</li>
+</ul>
 </div>
 </div>
 <div id="he-regression" class="section level1">
 <h1>HE Regression</h1>
+<ul>
+<li>Linear regression of the below-diagonal entries of <span class="math inline">\(Y\)</span> on the below-diagonal entries of the three GRMs of coded genotypes</li>
+<li>Hat matrix (projection matrix into predictor space) is of dimension <span class="math inline">\(\frac{1}{2}n\left(n-1)\)</span>, and the orthogonality of the GRMs means that it should be a linear combination of the particular hat matrices for each coding</li>
+<li>In <code>lrt_sim_HEDOSE.R::heSim()</code>, the predictors and outcomes are stored in a data frame</li>
+</ul>
+<pre class="r"><code>    hedata &lt;- data.frame(pheno = phGRM[lower.tri(phGRM)], add = aGRM[lower.tri(aGRM)], dom = dGRM[lower.tri(dGRM)], xeps = xGRM[lower.tri(xGRM)])</code></pre>
+<div id="predictor-variables" class="section level2">
+<h2>Predictor variables</h2>
+<ul>
+<li></li>
+</ul>
+<div id="hat-matrices" class="section level3">
+<h3>Hat matrices</h3>
+<ul>
+<li>A</li>
+<li>D</li>
+<li>G</li>
+</ul>
 </div>
-<div id="problem-mothers-and-fathers-maf-unequal" class="section level1">
+</div>
+<div id="outcome-variable" class="section level2">
+<h2>Outcome variable</h2>
+<div id="fitted-values" class="section level3">
+<h3>Fitted values</h3>
+</div>
+<div id="residuals" class="section level3">
+<h3>Residuals</h3>
+</div>
+</div>
+</div>
+<div id="uneqMAF" class="section level1">
 <h1>Problem: mothers’ and fathers’ MAF unequal</h1>
 <ol style="list-style-type: decimal">
-<li>Rationale and implementation</li>
+<li>Rationale and implementation
+<ul>
+<li>By def</li>
+</ul></li>
 <li>Example</li>
 </ol>
 </div>
-<div id="problem-correlated-gametes" class="section level1">
+<div id="corrGAM" class="section level1">
 <h1>Problem: Correlated gametes</h1>
 <ol style="list-style-type: decimal">
 <li>Rationale and implementation</li>
@@ -214,7 +479,11 @@ $(document).ready(function () {
 <div id="problem-heterozygotes-incorrectly-phased" class="section level1">
 <h1>Problem: Heterozygotes incorrectly phased</h1>
 <ol style="list-style-type: decimal">
-<li>Rationale and implementation</li>
+<li>Rationale and implementation
+<ul>
+<li>The idea is that CX</li>
+<li>This is not yet implemented in <code>simulate_funcs_HEDOSE.R</code></li>
+</ul></li>
 <li>Example</li>
 </ol>
 </div>
