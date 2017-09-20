@@ -1,0 +1,122 @@
+---
+title: "Correlation notes"
+author: "C A Laurin"
+date: "20 September 2017"
+output: 
+  html_document:
+    toc: TRUE
+---
+# Parental gametes, considering two linked loci
+Consider loci I and II, which are in linkage disequilibrium. Represent the four transmitted alleles at these loci by four random variables: for the first locus, $\tau_{I,Mo},\,\tau_{I,Fa}$ and $\tau_{II,Mo},\,\tau_{II,Fa}$ at the second locus, where 
+$$\tau = \begin{cases}1 &\text{if minor allele transmitted}\\ 0 &\text{if major allele transmitted}\end{cases}$$ 
+We assume: random mating so that $\tau_{.,Mo}$ are independent of $\tau_{.,Fa}$, and equal allele frequencies across sexes. 
+For simplicity, assume that the minor allele frequencies(MAFs) are equal across loci; the results here can be extended straightforwardly to loci with differing MAFs. 
+
+With MAF equal to $p$ and defining $q = 1 - p$:
+
+- $E\left(\tau_{I,Mo}\right) = E\left(\tau_{I,Fa}\right) = E\left(\tau_{II,Mo}\right) = E\left(\tau_{II,Fa}\right) = p$
+- Because the $\tau$ are indicator variables, $E\left(\tau^2_{I,Mo}\right) = E\left(\tau^2_{I,Fa}\right) = E\left(\tau^2_{II,Mo}\right) = E\left(\tau^2_{II,Fa}\right) = p$
+- $\text{Var}\left(\tau_{I,Mo}\right) = \text{Var}\left(\tau_{I,Fa}\right) = \text{Var}\left(\tau_{II,Mo}\right) = \text{Var}\left(\tau_{II,Fa}\right) = p - p^2 = pq$
+
+Then, following standard notation, let $D$ be the covariance between gametes at the two loci. This means that the means of cross-products are:
+
+- $E\left(\tau_{I,Mo}\tau_{II,Mo}\right) = E\left(\tau_{I,Fa}\tau_{II,Fa}\right) = D + p^2$
+
+By the independence of maternal and paternal gametes: 
+
+- $E\left(\tau_{I,Mo}\tau_{II,Fa}\right) = E\left(\tau_{I,Fa}\tau_{II,Mo}\right) =E\left(\tau\right)^2 = p^2$   
+- $E\left(\tau_{I,Mo}\tau_{I,Fa}\tau_{II,Mo}\tau_{II,Fa}\right) = E\left(\tau_{I,Mo}\tau_{II,Mo}\right)E\left(\tau_{I,Fa}\tau_{II,Fa}\right) = \left(D +  p^2\right)^2$   
+- $E\left(\tau_{I,Mo}\tau_{I,Fa}\tau_{II,Mo}\right) = E\left(\tau_{I,Fa}\right)E\left(\tau_{I,Mo}\tau_{II,Mo}\right) = p\left(D +  p^2\right)$
+
+# Correlation between additive codings
+- Let the additive coding at locus I be $X_{AI} = \tau_{I,Mo} + \tau_{I,Fa}$ and define $X_{AII}$ analogously for locus II
+- Then $E\left(X_{AI}\right) = E\left(X_{AII}\right) = 2p$ and $\text{Var}\left(X_{AI}\right) = \text{Var}\left(X_{AII}\right) = 2pq$
+- The covariance between loci is 
+$$\begin{align}
+E\left(X_{AI}X_{AII}\right) - E\left(X_{AI}\right)E\left(X_{AII}\right) &= E\left(\tau_{I,Mo}\tau_{II,Mo} + \tau_{I,Mo}\tau_{II,Fa} + \tau_{I,Fa}\tau_{II,Mo} +  \tau_{I,Fa}\tau_{II,Fa}\right) - 4p^2\\
+&= \left(D + p^2\right) + p^2 + p^2 + \left(D + p^2\right) - 4p^2\\
+&= 2D
+\end{align}
+$$
+- This means that the correlation is $r = \frac{2D}{2pq} = \frac{D}{pq}$, which is the typical correlation coefficient used to summarize LD 
+
+
+# Correlation between parent-of-origin codings
+- Let the parent-of-origin coding at locus I be $X_{\gamma I} = \tau_{I,Mo} - \tau_{I,Fa}$ and define $X_{\gamma II}$ analogously for locus II.
+- Then $E\left(X_{\gamma I}\right) = p - p = 0 = E\left(X_{\gamma II}\right)$ 
+- $\text{Var}\left(X_{\gamma I}\right) = E\left(\tau_{I,Mo}^2 - 2\tau_{I,Mo}\tau_{I,Fa} + \tau_{I,Fa}^2 \right) = p - 2p^2 + p  = 2pq = \text{Var}\left(X_{\gamma II}\right)$, which is also the same variance as in the additive coding.
+- The covariance is:
+$$
+\begin{align}
+E\left(X_{\gamma I}X_{\gamma II}\right) - E\left(X_{\gamma I}\right)E\left(X_{\gamma II}\right) &= E\left(\tau_{I,Mo}\tau_{II,Mo} - \tau_{I,Mo}\tau_{II,Fa} - \tau_{I,Fa}\tau_{II,Mo} + \tau_{I,Fa}\tau_{II,Fa}\right) - 0\\
+&= \left(D + p^2\right) - p^2 - p^2 + \left(D + p^2\right)\\
+&= 2D
+\end{align}
+$$
+- This means that the correlation is also $r = \frac{2D}{2pq} = \frac{D}{pq}$ 
+
+# Correlation between dominance codings
+- Let the dominance coding at locus I be $X_{\Delta I} = 2pX_{AI}-2\tau_{I,Mo}\tau_{I,Fa} = 2p\tau_{I,Mo}+2p\tau_{I,Fa} - 2\tau_{I,Mo}\tau_{I,Fa}$ and define $X_{\Delta II}$ analogously for locus II.
+- Then $E\left(X_{\Delta I}\right) = 2p^2 + 2p^2 - 2p^2 = 2p^2 = E\left(X_{\Delta II}\right)$ 
+- The variance is: $$
+\begin{align}
+\text{Var}\left(X_{\Delta I}\right) &= E{X_{\Delta I}^2}-E{X_{\Delta I}}^2\\
+&= E\left(4p^2\tau_{I,Mo}^2 + 4p^2\tau_{I,Fa}^2 + 8p^2\tau_{I,Mo}\tau_{I,Fa} -8p\tau_{I,Mo}^2\tau_{I,Fa}  -8p\tau_{I,Mo}\tau_{I,Fa}^2  + 4\tau_{I,Mo}^2\tau_{I,Fa}^2\right) - 4p^4 \\
+&= 4p^3 + 4p^3 + 8p^4 - 8p^3 - 8p^3 + 4p^2 - 4p^4\\
+&= 4p^4 - 8p^3+ 4p^2\\
+&= 4p^2\left(p^2-2p + 1\right)\\
+&= 4p^2q^2\\
+&= \text{Var}\left(X_{\Delta II}\right)\end{align}$$, which is the square of the variance of the additive coding
+- The covariance is:
+
+$$
+\begin{align}
+\text{Cov}\left(X_{\Delta I},\,X_{\Delta II}\right)&= E\left(X_{\Delta I}X_{\Delta II}\right) - E\left(X_{\Delta I}\right)E\left(X_{\Delta II}\right) \\
+&= E\left(\left(2p\tau_{I,Mo}+2p\tau_{I,Fa} - 2\tau_{I,Mo}\tau_{I,Fa}\right)\left(2p\tau_{II,Mo}+2p\tau_{II,Fa} - 2\tau_{II,Mo}\tau_{II,Fa}\right)\right) - 4p^4\\
+&= E\left(4p^2\tau_{I,Mo}\tau_{II,Mo} + 4p^2\tau_{I,Mo}\tau_{II,Fa} - 4p\tau_{I,Mo}\tau_{II,Mo}\tau_{II,Fa}\right) \\
+&\quad +  E\left( 4p^2\tau_{I,Fa}\tau_{II,Fa} + 4p^2\tau_{I,Fa}\tau_{II,Mo} - 4p\tau_{I,Fa}\tau_{II,Fa}\tau_{II,Mo}\right)\\
+&\quad + E \left(-4p\tau_{I,Fa}\tau_{I,Mo}\tau_{II,Mo}- 4p\tau_{I,Fa}\tau_{I,Mo}\tau_{II,Fa} + 4\tau_{I, Mo}\tau_{II,Mo}\tau_{I,Fa}\tau_{II,Fa} \right) - 4p^4\\
+&= 4p^2\left(D + p^2\right) + 4p^4 - 4p^2\left(D + p^2\right) \\
+&\quad + 4p^2\left(D + p^2\right) + 4p^4 - 4p^2\left(D + p^2\right) \\
+&\quad -4p^2\left(D + p^2\right) -4p^2\left(D + p^2\right)  + 4\left(D + p^2\right)^2  - 4p^4\\
+&= 4p^4 - 8p^2\left(D + p^2\right) + 4\left(D + p^2\right)^2\\
+&= 4\left(p^2 -\left(D + p^2\right)\right)^2\\
+&= 4D^2
+\end{align}
+$$
+- This means that the correlation is $r_\Delta = \frac{4D^2}{4p^2q^2} = \frac{D^2}{p^2q^2}$, which is the square of the LD correlation between locus I and locus II 
+
+
+# Cross-locus, cross-coding correlation: additive and parent-of-origin
+- This is relatively simple because the two codings have the same variance and the parent-of-origin coding has a mean of 0
+$$
+\begin{align}
+\text{Cov}\left(X_{AI},\,X_{\gamma II}\right)&= E\left(\left(\tau_{I,Mo} + \tau_{I,Fa}\right)\left(\tau_{II,Mo} - \tau_{II,Fa}\right)\right)\\
+&= E\left(\tau_{I,Mo}\tau_{II,Mo} - \tau_{I,Mo}\tau_{II,Fa} + \tau_{I,Fa}\tau_{II,Mo} - \tau_{I,Fa}\tau_{II,Fa}\right)\\
+&= \left(D + p^2\right) - p^2 + p^2 - \left(D + p^2\right)\\
+&= 0 
+\end{align}
+$$
+- Because the covariance is 0, the correlation is as well
+
+# Cross-locus, cross-coding correlation: additive and dominance
+$$
+\begin{align}
+\text{Cov}\left(X_{AI},\,X_{\Delta II}\right)&= E\left(\left(\tau_{I,Mo} + \tau_{I,Fa}\right)\left(2p\tau_{II,Mo} + 2p\tau_{II,Fa} -2 \tau_{II,Mo}\tau_{II,Fa}\right)\right)-4p^3\\
+&= E\left(2p\tau_{I,Mo}\tau_{II,Mo} + 2p\tau_{I,Mo}\tau_{II,Fa} - 2\tau_{I,Mo}\tau_{II,Mo}\tau_{II,Fa} + 2p\tau_{I,Fa}\tau_{II,Mo} + 2p\tau_{I,Fa}\tau_{II,Fa} - 2\tau_{I,Fa}\tau_{II,Mo}\tau_{II,Fa}\right) - 4p^3\\
+&= 2p\left(D + p^2\right) + 2p^3 - 2p\left(D + p^2\right) + 2p^3 +  2p\left(D + p^2\right) - 2p\left(D + p^2\right) - 4p^3\\
+&= 0 
+\end{align}
+$$
+
+# Cross-locus, cross-coding correlation: parent-of-origin and dominance
+$$
+\begin{align}
+\text{Cov}\left(X_{\gamma I},\,X_{\Delta II}\right)&= E\left(\left(\tau_{I,Mo} - \tau_{I,Fa}\right)\left(2p\tau_{II,Mo} + 2p\tau_{II,Fa} -2 \tau_{II,Mo}\tau_{II,Fa}\right)\right)\\
+&= E\left(2p\tau_{I,Mo}\tau_{II,Mo} + 2p\tau_{I,Mo}\tau_{II,Fa} - 2\tau_{I,Mo}\tau_{II,Mo}\tau_{II,Fa} - 2p\tau_{I,Fa}\tau_{II,Mo} - 2p\tau_{I,Fa}\tau_{II,Fa} + 2\tau_{I,Fa}\tau_{II,Mo}\tau_{II,Fa}\right) \\
+&= 2p\left(D + p^2\right) + 2p^3 - 2p\left(D + p^2\right) - 2p^3 -  2p\left(D + p^2\right) + 2p\left(D + p^2\right) \\
+&= 0 
+\end{align}
+$$
+
+    
